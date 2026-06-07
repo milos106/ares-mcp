@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ares": {
+      "command": "npx",
+      "args": ["-y", "ares-mcp"],
+      "env": {
+        "ARES_RATE_PER_SECOND": "5"
+      }
+    }
+  }
+}

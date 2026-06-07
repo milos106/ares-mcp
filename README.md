@@ -7,8 +7,9 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 > **Not affiliated with the Czech Ministry of Finance.** This project is not affiliated with, endorsed by, or sponsored by MFČR or the ARES operator. "ARES" refers to the public information system; this MCP server is third-party software.
 
 - **Free, MIT-licensed code.** No API key required (ARES is a public API).
-- **9 stable tools** covering the most common workflows: validation, lookup, search, due diligence, VAT check, address standardization, NACE lookup, plus a cross-company person graph.
-- **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), structured errors, no PII stored or logged by default.
+- **9 stable tools** covering the most common workflows: validation, lookup, search, due diligence, VAT check, address standardization, NACE lookup, plus a **cross-company person graph** with Mermaid rendering.
+- **Two transports.** Stdio (default) for local AI clients, Streamable HTTP (`/mcp`) for remote / web deployment.
+- **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), per-IP request throttling on the HTTP variant, structured errors, no PII stored or logged by default.
 
 ---
 
@@ -66,6 +67,40 @@ npm test
 
 Then point your MCP client at `node /absolute/path/to/ares-mcp/dist/index.js`.
 
+### Try it interactively with MCP Inspector
+
+```sh
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+Opens a browser UI at `http://localhost:6274` where you can list tools, fill arguments, and run them against live ARES — no client configuration needed.
+
+### Run as a remote HTTP service
+
+A second entry point exposes the same tools over MCP Streamable HTTP. Useful for self-hosting or sharing one instance across multiple machines.
+
+```sh
+PORT=3030 npm run start:http
+# or after npm install -g ares-mcp:
+PORT=3030 ares-mcp-http
+```
+
+Endpoints:
+- `POST /mcp` — Streamable HTTP transport (JSON-RPC over HTTP / SSE)
+- `GET  /healthz` — liveness + session count
+
+Configuration via environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3030` | Listen port |
+| `ARES_HTTP_RATE_LIMIT` | `60` | Per-IP requests per minute (token bucket) |
+| `ARES_HTTP_MAX_BODY` | `1000000` | Max request body bytes |
+| `ARES_HTTP_SESSION_TTL_MS` | `3600000` | Idle session timeout |
+| `ARES_HTTP_ALLOW_ORIGIN` | _(unset)_ | If set, sent as `Access-Control-Allow-Origin` (e.g. `*` or `https://example.com`) |
+
+There is **no built-in authentication** — upstream data is public. If you need auth, put a reverse proxy in front (Cloudflare Access, nginx basic auth, …).
+
 ---
 
 ## Tools
@@ -101,6 +136,56 @@ The last prompt uses `ares_cross_company_persons`. The tool returns a Mermaid gr
 ### A note on person→companies search
 
 ARES's public REST v3 API does **not** expose a search-by-person endpoint (the `AngazovanaOsobaFiltr` schema is defined but unused). `ares_cross_company_persons` therefore operates over a **known set** of IČOs that you provide — it does not enumerate the registry. Full reverse lookup ("which companies has Jan Novák ever sat on?") requires a mirrored graph database and is out of scope for this MIT-licensed server.
+
+---
+
+## Real example — the Agrofert holding
+
+Run `ares_cross_company_persons` with four IČOs from the Agrofert group (AGROFERT itself + three subsidiaries) and the tool returns the full board overlap. Captured from a live ARES call on 2026-06-07:
+
+```
+zpracovanoIco: 4
+totalActivePersons: 29
+sharedCount: 3
+
+  • Ing. MICHAL JEDLIČKA (1978-01-06)
+       AGROFERT, a.s.            — člen představenstva
+       Kostelecké uzeniny a.s.   — předseda představenstva
+       Vodňanské kuře, s.r.o.    — Jednatel
+
+  • Ing. JAROSLAV KURČÍK (1969-08-24)
+       AGROFERT, a.s.            — člen představenstva
+       PENAM, a.s.               — předseda představenstva
+
+  • AGROFERT, a.s. (právnická osoba, IČO 26185610)
+       PENAM, a.s.               — člen představenstva
+       Kostelecké uzeniny a.s.   — člen představenstva
+```
+
+Rendered as Mermaid (Claude Desktop / Claude Code / Cursor render this inline):
+
+```mermaid
+graph LR
+  C_26185610["AGROFERT, a.s.<br/>26185610"]:::company
+  C_46967851["PENAM, a.s.<br/>46967851"]:::company
+  C_46900411["Kostelecké uzeniny a.s.<br/>46900411"]:::company
+  C_27435148["Vodňanské kuře, s.r.o.<br/>27435148"]:::company
+  P_0(["Ing. MICHAL JEDLIČKA"]):::person
+  P_0 ---|"člen představenstva"| C_26185610
+  P_0 ---|"předseda představenstva"| C_46900411
+  P_0 ---|"Jednatel"| C_27435148
+  P_1(["Ing. JAROSLAV KURČÍK"]):::person
+  P_1 ---|"člen představenstva"| C_26185610
+  P_1 ---|"předseda představenstva"| C_46967851
+  P_2["AGROFERT, a.s. (IČO 26185610)"]:::legal
+  P_2 ---|"člen představenstva"| C_46967851
+  P_2 ---|"člen představenstva"| C_46900411
+  classDef company fill:#e0f7fa,stroke:#006064,stroke-width:2px;
+  classDef person fill:#fff3e0,stroke:#bf360c,stroke-width:2px;
+  classDef legal fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+```
+
+The third connection — AGROFERT a.s. itself listed as a corporate director in two of its subsidiaries — is a real holding-company pattern that flat per-company listings miss but the graph helper surfaces automatically.
 
 ---
 

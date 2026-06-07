@@ -23,7 +23,8 @@
   "author": "Miloš Pospíšil <milospospisil68@gmail.com>",
   "type": "module",
   "bin": {
-    "ares-mcp": "./dist/index.js"
+    "ares-mcp": "./dist/index.js",
+    "ares-mcp-http": "./dist/http.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -37,6 +38,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/index.ts",
+    "dev:http": "tsx src/http.ts",
+    "start": "node dist/index.js",
+    "start:http": "node dist/http.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check src tests",
