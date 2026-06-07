@@ -1,0 +1,61 @@
+{
+  "name": "ares-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for ARES — Czech business registry. Validate IČO/DIČ, look up companies, statutory bodies, trade licenses, and addresses from Claude Desktop, Claude Code, Cursor and other MCP clients.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ares",
+    "czech",
+    "business-registry",
+    "ico",
+    "dic",
+    "vat",
+    "claude",
+    "anthropic"
+  ],
+  "homepage": "https://github.com/milospospisil/ares-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milospospisil/ares-mcp.git"
+  },
+  "license": "MIT",
+  "author": "Miloš Pospíšil <milospospisil68@gmail.com>",
+  "type": "module",
+  "bin": {
+    "ares-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src tests",
+    "format": "biome format --write src tests",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "p-retry": "^6.2.0",
+    "undici": "^6.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^20.17.10",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
