@@ -5,6 +5,7 @@ All notable changes to ares-mcp will be documented in this file.
 ## [Unreleased]
 
 ### Added — tools
+- `ares_export_for_invoicing` — adapter that transforms an ARES profile into a Czech invoice-system payload. Targets: `fakturoid` (JSON for `POST .../subjects.json`), `idoklad` (JSON for the Contacts endpoint), `pohoda` (XML-hint JSON with `adb:` namespaces). Pure transformation — no calls to the target system, so no extra license footprint.
 - `ares_check_insolvenci` — fast red-flag check reading `seznamRegistraci.{stavZdrojeIr, stavZdrojeCeu}` from the ARES aggregate endpoint. Returns clear `isInsolvent` boolean plus the underlying state codes and human notes. Real fixture: Liberty Ostrava a.s. (IČO 45193258, `stavZdrojeIr = AKTIVNI`).
 - `ares_full_due_diligence` — single-call macro that fetches the aggregate, VR and RŽP records in parallel and produces a structured report with a 🟢🟡🔴 risk flag, machine-readable sections, and a Markdown summary suitable for chat display. Conservative scoring: insolvency / dissolution flips to red, missing statutaries / VAT inconsistencies / terminated trade licenses flip to yellow, otherwise green.
 - `ares_search_by_address` — find all entities at a given address via `sidlo.textovaAdresa` filter. Flags virtual offices and shell-address concentrations with a tiered warning (>50 = possible regus / virtual office, >500 = strong virtual-office signal).

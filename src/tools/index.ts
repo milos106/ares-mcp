@@ -2,6 +2,7 @@ import { checkInsolvenciTool } from "./checkInsolvenci.js";
 import { checkVatPayerTool } from "./checkVatPayer.js";
 import type { RegisteredTool } from "./common.js";
 import { crossCompanyPersonsTool } from "./crossCompanyPersons.js";
+import { exportForInvoicingTool } from "./exportForInvoicing.js";
 import { fullDueDiligenceTool } from "./fullDueDiligence.js";
 import { getResClassificationTool } from "./getResClassification.js";
 import { getStatutoryBodiesTool } from "./getStatutoryBodies.js";
@@ -27,4 +28,5 @@ export const ALL_TOOLS: RegisteredTool[] = [
   checkInsolvenciTool,
   fullDueDiligenceTool,
   getResClassificationTool,
+  exportForInvoicingTool,
 ];

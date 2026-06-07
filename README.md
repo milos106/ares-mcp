@@ -9,7 +9,7 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 > **Not affiliated with the Czech Ministry of Finance.** This project is not affiliated with, endorsed by, or sponsored by MFČR or the ARES operator. "ARES" refers to the public information system; this MCP server is third-party software.
 
 - **Free, MIT-licensed code.** No API key required (ARES is a public API).
-- **13 stable tools** covering the full due-diligence workflow: validation, lookup, structured search, **search-by-address** (virtual-office detection), statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, **RES statistical classification** (size bracket, ESA 2010 sector), **insolvency check**, **cross-company person graph** with Mermaid + optional historical mode for nominee detection, and a one-shot `ares_full_due_diligence` macro that bundles everything into a risk-flagged report.
+- **14 stable tools** covering the full due-diligence + invoicing workflow: validation, lookup, structured search, **search-by-address** (virtual-office detection), statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, **RES statistical classification** (size bracket, ESA 2010 sector), **insolvency check**, **cross-company person graph** with Mermaid + optional historical mode for nominee detection, a one-shot `ares_full_due_diligence` macro with 🟢🟡🔴 risk flag, and an **export adapter** that emits Fakturoid / iDoklad / Pohoda payloads ready to POST.
 - **Two transports.** Stdio (default) for local AI clients, Streamable HTTP (`/mcp`) for remote / web deployment.
 - **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), per-IP request throttling on the HTTP variant, structured errors, no PII stored or logged by default.
 
@@ -132,6 +132,7 @@ There is **no built-in authentication** — bind it to `127.0.0.1` only or put a
 | `ares_get_res_classification` | Statistical classification from RES — size bracket, ESA 2010 sector, NUTS region. |
 | `ares_check_insolvenci` | Fast red-flag: is the entity currently in insolvency proceedings (IR) or marked as bankrupt (CEÚ)? |
 | `ares_full_due_diligence` | One-shot DD report — profile + statutary + licenses + VAT + insolvency + 🟢🟡🔴 risk flag + Markdown summary. |
+| `ares_export_for_invoicing` | Transform an ARES profile into a Fakturoid / iDoklad / Pohoda payload ready for invoicing systems. Pure transformation — no calls to the target system. |
 
 ### Example prompts
 
