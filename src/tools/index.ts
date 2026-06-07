@@ -1,6 +1,8 @@
+import { checkInsolvenciTool } from "./checkInsolvenci.js";
 import { checkVatPayerTool } from "./checkVatPayer.js";
 import type { RegisteredTool } from "./common.js";
 import { crossCompanyPersonsTool } from "./crossCompanyPersons.js";
+import { fullDueDiligenceTool } from "./fullDueDiligence.js";
 import { getStatutoryBodiesTool } from "./getStatutoryBodies.js";
 import { getTradeLicensesTool } from "./getTradeLicenses.js";
 import { lookupCompanyTool } from "./lookupCompany.js";
@@ -19,4 +21,6 @@ export const ALL_TOOLS: RegisteredTool[] = [
   standardizeAddressTool,
   lookupCzNaceTool,
   crossCompanyPersonsTool,
+  checkInsolvenciTool,
+  fullDueDiligenceTool,
 ];

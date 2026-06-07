@@ -9,7 +9,7 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 > **Not affiliated with the Czech Ministry of Finance.** This project is not affiliated with, endorsed by, or sponsored by MFČR or the ARES operator. "ARES" refers to the public information system; this MCP server is third-party software.
 
 - **Free, MIT-licensed code.** No API key required (ARES is a public API).
-- **9 stable tools** covering the most common workflows: validation, lookup, search, due diligence, VAT check, address standardization, NACE lookup, plus a **cross-company person graph** with Mermaid rendering.
+- **11 stable tools** covering the full due-diligence workflow: validation, lookup, search, statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, insolvency check, **cross-company person graph** with Mermaid rendering, and a one-shot `ares_full_due_diligence` macro that bundles everything into a risk-flagged report.
 - **Two transports.** Stdio (default) for local AI clients, Streamable HTTP (`/mcp`) for remote / web deployment.
 - **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), per-IP request throttling on the HTTP variant, structured errors, no PII stored or logged by default.
 
@@ -118,6 +118,8 @@ There is **no built-in authentication** — bind it to `127.0.0.1` only or put a
 | `ares_standardize_address` | Canonicalize a free-form address via RÚIAN. |
 | `ares_lookup_cz_nace` | CZ-NACE classification lookup. |
 | `ares_cross_company_persons` | Given 2–50 IČOs, find persons who hold active statutory roles in two or more of them. Returns JSON + Mermaid graph. |
+| `ares_check_insolvenci` | Fast red-flag: is the entity currently in insolvency proceedings (IR) or marked as bankrupt (CEÚ)? |
+| `ares_full_due_diligence` | One-shot DD report — profile + statutary + licenses + VAT + insolvency + 🟢🟡🔴 risk flag + Markdown summary. |
 
 ### Example prompts
 
@@ -132,6 +134,36 @@ There is **no built-in authentication** — bind it to `127.0.0.1` only or put a
 > "Look up the CZ-NACE code for software development."
 
 > "I have IČOs 26185610, 46967851, 46900411, 27435148. Are any people on the boards of more than one? Draw it."
+
+> "Run a full due-diligence check on IČO 45193258 before I sign anything."
+
+The DD prompt calls `ares_full_due_diligence` and returns a complete risk-flagged report. Real example (Liberty Ostrava a.s., captured 2026-06-07):
+
+```
+# Due diligence: Liberty Ostrava a.s.
+
+Risk level: 🔴 RED
+
+Findings:
+- 🚨 Active insolvency or bankruptcy on record.
+
+## Identification
+- IČO: `45193258`
+- DIČ: `CZ45193258` (VAT payer: yes)
+- Legal form: 121
+- Founded: 1992-01-22
+- Registered seat: Vratimovská 689/117, Kunčice, 71900 Ostrava
+
+## Governance
+- Active statutary members: 3
+
+## Insolvency
+- Insolvenční rejstřík: ACTIVE
+- Centrální evidence úpadců: NONE
+- Currently insolvent.
+```
+
+The same prompt on a healthy company (AGROFERT IČO 26185610) yields 🟢 GREEN with 12 active statutary members and no findings.
 
 The last prompt uses `ares_cross_company_persons`. The tool returns a Mermaid graph that Claude Desktop, Claude Code, and Cursor will render inline. On the Agrofert holding example above, the tool reports that *Michal Jedlička* sits on three of the four boards and *Jaroslav Kurčík* on two — a classic holding-group fingerprint.
 

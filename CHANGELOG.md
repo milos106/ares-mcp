@@ -2,6 +2,16 @@
 
 All notable changes to ares-mcp will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- `ares_check_insolvenci` — fast red-flag check reading `seznamRegistraci.{stavZdrojeIr, stavZdrojeCeu}` from the ARES aggregate endpoint. Returns clear `isInsolvent` boolean plus the underlying state codes and human notes. Real fixture: Liberty Ostrava a.s. (IČO 45193258, `stavZdrojeIr = AKTIVNI`).
+- `ares_full_due_diligence` — single-call macro that fetches the aggregate, VR and RŽP records in parallel and produces a structured report with a 🟢🟡🔴 risk flag, machine-readable sections, and a Markdown summary suitable for chat display. Conservative scoring: insolvency / dissolution flips to red, missing statutaries / VAT inconsistencies / terminated trade licenses flip to yellow, otherwise green.
+
+### Changed
+- Project marked `"private": true` in package.json; npm distribution removed (use locally cloned repo).
+- Build no longer emits source maps (`tsup` config `sourcemap: false`) to avoid leaking TypeScript source via `dist/*.js.map`.
+
 ## [0.1.0] — 2026-06-07
 
 Initial release.
