@@ -1,5 +1,11 @@
 # ares-mcp
 
+[![npm version](https://img.shields.io/npm/v/ares-mcp.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/ares-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/ares-mcp.svg?color=cb3837)](https://www.npmjs.com/package/ares-mcp)
+[![license](https://img.shields.io/npm/l/ares-mcp.svg?color=blue)](./LICENSE)
+[![node](https://img.shields.io/node/v/ares-mcp.svg?color=339933&logo=node.js&logoColor=white)](https://nodejs.org)
+[![MCP](https://img.shields.io/badge/MCP-2024--11--05-7c3aed)](https://modelcontextprotocol.io)
+
 > **MCP server for ARES — the Czech business registry.** Validate IČO/DIČ, look up companies, statutory bodies, trade licenses and addresses directly from Claude Desktop, Claude Code, Cursor and any other MCP-compatible client.
 
 ARES (Administrativní registr ekonomických subjektů) is the official public registry of Czech businesses, operated by the Czech Ministry of Finance (MFČR). This project is an **independent, community-built** MCP server that calls the public ARES REST API.
