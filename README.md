@@ -1,12 +1,8 @@
 # ares-mcp
 
-[![npm version](https://img.shields.io/npm/v/ares-mcp.svg?color=cb3837&logo=npm)](https://www.npmjs.com/package/ares-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/ares-mcp.svg?color=cb3837)](https://www.npmjs.com/package/ares-mcp)
-[![license](https://img.shields.io/npm/l/ares-mcp.svg?color=blue)](./LICENSE)
-[![node](https://img.shields.io/node/v/ares-mcp.svg?color=339933&logo=node.js&logoColor=white)](https://nodejs.org)
-[![MCP](https://img.shields.io/badge/MCP-2024--11--05-7c3aed)](https://modelcontextprotocol.io)
-
 > **MCP server for ARES — the Czech business registry.** Validate IČO/DIČ, look up companies, statutory bodies, trade licenses and addresses directly from Claude Desktop, Claude Code, Cursor and any other MCP-compatible client.
+>
+> **Local-only project.** Not distributed via npm; intended for personal / private use from this repository.
 
 ARES (Administrativní registr ekonomických subjektů) is the official public registry of Czech businesses, operated by the Czech Ministry of Finance (MFČR). This project is an **independent, community-built** MCP server that calls the public ARES REST API.
 
@@ -19,7 +15,19 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 
 ---
 
-## Installation
+## Setup
+
+This project is not on npm. Clone the repo and build it once, then point your MCP client at the local `dist/index.js`.
+
+```sh
+git clone git@github.com:milos106/ares-mcp.git
+cd ares-mcp
+npm install
+npm run build
+npm test
+```
+
+Then use the absolute path of `dist/index.js` in your client config.
 
 ### Claude Desktop
 
@@ -33,8 +41,8 @@ Edit your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "ares": {
-      "command": "npx",
-      "args": ["-y", "ares-mcp"]
+      "command": "node",
+      "args": ["/absolute/path/to/ares-mcp/dist/index.js"]
     }
   }
 }
@@ -45,35 +53,25 @@ Restart Claude Desktop.
 ### Claude Code
 
 ```sh
-claude mcp add ares -- npx -y ares-mcp
+claude mcp add ares -- node /absolute/path/to/ares-mcp/dist/index.js
 ```
 
 ### Cursor
 
-In Cursor settings → MCP servers, add:
+In Cursor settings → MCP servers:
 
 ```json
 {
   "ares": {
-    "command": "npx",
-    "args": ["-y", "ares-mcp"]
+    "command": "node",
+    "args": ["/absolute/path/to/ares-mcp/dist/index.js"]
   }
 }
 ```
 
-### Local development
-
-```sh
-git clone https://github.com/milos106/ares-mcp.git
-cd ares-mcp
-npm install
-npm run build
-npm test
-```
-
-Then point your MCP client at `node /absolute/path/to/ares-mcp/dist/index.js`.
-
 ### Try it interactively with MCP Inspector
+
+From the repo root:
 
 ```sh
 npx @modelcontextprotocol/inspector node dist/index.js
@@ -81,14 +79,12 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 Opens a browser UI at `http://localhost:6274` where you can list tools, fill arguments, and run them against live ARES — no client configuration needed.
 
-### Run as a remote HTTP service
+### Run as a local HTTP service
 
-A second entry point exposes the same tools over MCP Streamable HTTP. Useful for self-hosting or sharing one instance across multiple machines.
+A second entry point exposes the same tools over MCP Streamable HTTP. Useful when sharing one running instance across multiple local clients.
 
 ```sh
 PORT=3030 npm run start:http
-# or after npm install -g ares-mcp:
-PORT=3030 ares-mcp-http
 ```
 
 Endpoints:
@@ -105,7 +101,7 @@ Configuration via environment variables:
 | `ARES_HTTP_SESSION_TTL_MS` | `3600000` | Idle session timeout |
 | `ARES_HTTP_ALLOW_ORIGIN` | _(unset)_ | If set, sent as `Access-Control-Allow-Origin` (e.g. `*` or `https://example.com`) |
 
-There is **no built-in authentication** — upstream data is public. If you need auth, put a reverse proxy in front (Cloudflare Access, nginx basic auth, …).
+There is **no built-in authentication** — bind it to `127.0.0.1` only or put a reverse proxy in front if you ever need to expose it.
 
 ---
 

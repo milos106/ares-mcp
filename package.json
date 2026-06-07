@@ -1,24 +1,8 @@
 {
   "name": "ares-mcp",
   "version": "0.1.0",
-  "description": "MCP server for ARES — Czech business registry. Validate IČO/DIČ, look up companies, statutory bodies, trade licenses, and addresses from Claude Desktop, Claude Code, Cursor and other MCP clients.",
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "ares",
-    "czech",
-    "business-registry",
-    "ico",
-    "dic",
-    "vat",
-    "claude",
-    "anthropic"
-  ],
-  "homepage": "https://github.com/milos106/ares-mcp",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/milos106/ares-mcp.git"
-  },
+  "private": true,
+  "description": "MCP server for ARES — Czech business registry. Local-only project; not distributed via npm.",
   "license": "MIT",
   "author": "milos106 <max118@seznam.cz>",
   "type": "module",
@@ -45,8 +29,7 @@
     "test:watch": "vitest",
     "lint": "biome check src tests",
     "format": "biome format --write src tests",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",

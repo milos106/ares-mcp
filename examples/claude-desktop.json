@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "ares": {
-      "command": "npx",
-      "args": ["-y", "ares-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/ares-mcp/dist/index.js"],
       "env": {
         "ARES_RATE_PER_SECOND": "5"
       }
