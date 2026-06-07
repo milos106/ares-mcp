@@ -9,7 +9,7 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 > **Not affiliated with the Czech Ministry of Finance.** This project is not affiliated with, endorsed by, or sponsored by MFČR or the ARES operator. "ARES" refers to the public information system; this MCP server is third-party software.
 
 - **Free, MIT-licensed code.** No API key required (ARES is a public API).
-- **11 stable tools** covering the full due-diligence workflow: validation, lookup, search, statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, insolvency check, **cross-company person graph** with Mermaid rendering, and a one-shot `ares_full_due_diligence` macro that bundles everything into a risk-flagged report.
+- **13 stable tools** covering the full due-diligence workflow: validation, lookup, structured search, **search-by-address** (virtual-office detection), statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, **RES statistical classification** (size bracket, ESA 2010 sector), **insolvency check**, **cross-company person graph** with Mermaid + optional historical mode for nominee detection, and a one-shot `ares_full_due_diligence` macro that bundles everything into a risk-flagged report.
 - **Two transports.** Stdio (default) for local AI clients, Streamable HTTP (`/mcp`) for remote / web deployment.
 - **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), per-IP request throttling on the HTTP variant, structured errors, no PII stored or logged by default.
 
@@ -69,13 +69,23 @@ In Cursor settings → MCP servers:
 }
 ```
 
-### Try it interactively with MCP Inspector
+### Get ready-to-paste client config
 
-From the repo root:
+After `npm run build`, this prints absolute-path config blocks for Claude Desktop, Cursor, Claude Code, and the local HTTP transport:
 
 ```sh
-npx @modelcontextprotocol/inspector node dist/index.js
+npm run config
 ```
+
+Copy the JSON block straight into your client's MCP config — no path editing needed.
+
+### Try it interactively with MCP Inspector
+
+```sh
+npm run inspector
+```
+
+(Equivalent to `npx @modelcontextprotocol/inspector node dist/index.js`.)
 
 Opens a browser UI at `http://localhost:6274` where you can list tools, fill arguments, and run them against live ARES — no client configuration needed.
 
@@ -118,6 +128,8 @@ There is **no built-in authentication** — bind it to `127.0.0.1` only or put a
 | `ares_standardize_address` | Canonicalize a free-form address via RÚIAN. |
 | `ares_lookup_cz_nace` | CZ-NACE classification lookup. |
 | `ares_cross_company_persons` | Given 2–50 IČOs, find persons who hold active statutory roles in two or more of them. Returns JSON + Mermaid graph. |
+| `ares_search_by_address` | Find all entities at a given address. Flags virtual offices / shell-address concentrations. |
+| `ares_get_res_classification` | Statistical classification from RES — size bracket, ESA 2010 sector, NUTS region. |
 | `ares_check_insolvenci` | Fast red-flag: is the entity currently in insolvency proceedings (IR) or marked as bankrupt (CEÚ)? |
 | `ares_full_due_diligence` | One-shot DD report — profile + statutary + licenses + VAT + insolvency + 🟢🟡🔴 risk flag + Markdown summary. |
 

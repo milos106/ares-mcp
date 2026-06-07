@@ -17,7 +17,13 @@ const inputShape = {
     .min(2)
     .max(50)
     .describe(
-      "List of 2–50 Czech IČOs to cross-reference. Each will be validated and looked up in the Public Register (VR). Members marked as removed (datumVymazu) are excluded.",
+      "List of 2–50 Czech IČOs to cross-reference. Each will be validated and looked up in the Public Register (VR).",
+    ),
+  includeHistorical: z
+    .boolean()
+    .default(false)
+    .describe(
+      "If true, include former members (those with `datumVymazu` set). Useful for nominee director detection and tracking director musical chairs. Default false = active members only.",
     ),
   emitMermaid: z
     .boolean()
@@ -32,7 +38,7 @@ export const crossCompanyPersonsTool = defineTool({
   description:
     "Given a list of Czech IČOs, find natural persons (and legal entities) who hold active statutory roles in two or more of them. Returns a structured cross-reference plus an optional Mermaid graph for visualization. Useful for due diligence (holding-group mapping, undisclosed beneficial connections, nominee director detection on a small known set).",
   inputShape,
-  handler: async ({ icos, emitMermaid }, { client }) => {
+  handler: async ({ icos, emitMermaid, includeHistorical }, { client }) => {
     try {
       const normalizedIcos: string[] = [];
       for (const raw of icos) {
@@ -69,7 +75,7 @@ export const crossCompanyPersonsTool = defineTool({
         }
       }
 
-      const graph = buildCrossCompanyGraph(companies);
+      const graph = buildCrossCompanyGraph(companies, { includeHistorical });
 
       return jsonResult({
         zpracovanoIco: uniqueIcos.length,

@@ -4,9 +4,24 @@ All notable changes to ares-mcp will be documented in this file.
 
 ## [Unreleased]
 
-### Added
+### Added — tools
 - `ares_check_insolvenci` — fast red-flag check reading `seznamRegistraci.{stavZdrojeIr, stavZdrojeCeu}` from the ARES aggregate endpoint. Returns clear `isInsolvent` boolean plus the underlying state codes and human notes. Real fixture: Liberty Ostrava a.s. (IČO 45193258, `stavZdrojeIr = AKTIVNI`).
 - `ares_full_due_diligence` — single-call macro that fetches the aggregate, VR and RŽP records in parallel and produces a structured report with a 🟢🟡🔴 risk flag, machine-readable sections, and a Markdown summary suitable for chat display. Conservative scoring: insolvency / dissolution flips to red, missing statutaries / VAT inconsistencies / terminated trade licenses flip to yellow, otherwise green.
+- `ares_search_by_address` — find all entities at a given address via `sidlo.textovaAdresa` filter. Flags virtual offices and shell-address concentrations with a tiered warning (>50 = possible regus / virtual office, >500 = strong virtual-office signal).
+- `ares_get_res_classification` — statistical classification from the RES sub-registry: headcount bracket (decoded into micro / small / medium / large per EC Recommendation 2003/361), ESA 2010 institutional sector, primary CZ-NACE, NUTS region, financial office.
+
+### Added — flags
+- `ares_cross_company_persons` now accepts `includeHistorical: boolean` (default `false`). When `true` the graph builder also visits members with `datumVymazu` set — useful for nominee detection and tracking director musical chairs. On the Agrofert holding fixture, history-mode surfaces 10 shared persons instead of 3, including Jaroslav Kurčík's 17 successive memberships across the group.
+
+### Fixed
+- `ares_search_companies` was sending `sidloPsc` and `sidloKodObce` at the top level of the request body; ARES silently ignored those keys. The handler now nests them into `sidlo.{psc, kodObce}` per `AdresaFiltr`.
+
+### Added — UX
+- `npm run config` prints ready-to-paste MCP-client configs for Claude Desktop, Cursor and Claude Code with the local absolute path of `dist/index.js` pre-filled. Plus a one-line command for the local HTTP transport.
+- `npm run inspector` shortcut to `npx @modelcontextprotocol/inspector node dist/index.js`.
+
+### Added — tests
+- 18 new tests across `checkInsolvenci.test.ts`, `fullDueDiligence.test.ts`, `searchByAddress.test.ts`, `getResClassification.test.ts`, and the `includeHistorical` extension of `graph.test.ts`. Total now 69 tests across 6 files, all green. Tests use a `_helpers/mockClient.ts` against real ARES fixtures captured 2026-06-07.
 
 ### Changed
 - Project marked `"private": true` in package.json; npm distribution removed (use locally cloned repo).

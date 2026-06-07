@@ -86,6 +86,33 @@ describe("buildCrossCompanyGraph (Agrofert holding fixtures)", () => {
   });
 });
 
+describe("buildCrossCompanyGraph — includeHistorical", () => {
+  const inputs = [AGROFERT, PENAM, KOSTELECKE, VODNANSKE].map((ico) => ({
+    ico,
+    vr: loadVr(ico),
+  }));
+
+  it("expands the shared-person set when historical members are included", () => {
+    const active = buildCrossCompanyGraph(inputs);
+    const withHistory = buildCrossCompanyGraph(inputs, { includeHistorical: true });
+    expect(withHistory.sharedPersons.length).toBeGreaterThan(active.sharedPersons.length);
+  });
+
+  it("keeps totalActivePersons stable regardless of includeHistorical", () => {
+    const active = buildCrossCompanyGraph(inputs);
+    const withHistory = buildCrossCompanyGraph(inputs, { includeHistorical: true });
+    expect(withHistory.totalActivePersons).toBe(active.totalActivePersons);
+  });
+
+  it("marks historical memberships with a datumVymazu", () => {
+    const withHistory = buildCrossCompanyGraph(inputs, { includeHistorical: true });
+    const hadHistorical = withHistory.sharedPersons.some((p) =>
+      p.memberships.some((m) => m.datumVymazu),
+    );
+    expect(hadHistorical).toBe(true);
+  });
+});
+
 describe("buildCrossCompanyGraph — edge cases", () => {
   it("handles a company missing from VR (null record)", () => {
     const inputs = [

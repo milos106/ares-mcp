@@ -169,6 +169,41 @@ export interface RzpZaznam {
   [key: string]: unknown;
 }
 
+/** /ekonomicke-subjekty-res/{ico} returns a wrapper around RES records. */
+export interface ResOdpoved {
+  icoId?: string;
+  zaznamy?: ResZaznam[];
+  [key: string]: unknown;
+}
+
+export interface ResZaznam {
+  ico?: string;
+  obchodniJmeno?: string;
+  primarniZaznam?: boolean;
+  datumVzniku?: string;
+  datumAktualizace?: string;
+  pravniForma?: string;
+  pravniFormaRos?: string;
+  financniUrad?: string;
+  okresNutsLau?: string;
+  zakladniUzemniJednotka?: string;
+  sidlo?: Adresa;
+  czNace?: string[];
+  czNace2008?: string[];
+  czNacePrevazujici?: string;
+  czNacePrevazujici2008?: string;
+  statistickeUdaje?: ResStatistickeUdaje;
+  [key: string]: unknown;
+}
+
+export interface ResStatistickeUdaje {
+  /** ČSÚ kód kategorie počtu pracovníků. */
+  kategoriePoctuPracovniku?: string;
+  /** SEC2010 / ESA 2010 institucionální sektor. */
+  institucionalniSektor2010?: string;
+  [key: string]: unknown;
+}
+
 export interface ZivnostenskeOpravneni {
   predmetPodnikani?: string;
   druh?: string;

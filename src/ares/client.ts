@@ -13,6 +13,7 @@ import type {
   CiselnikyOdpoved,
   EkonomickeSubjektySeznam,
   EkonomickySubjekt,
+  ResOdpoved,
   RzpZaznam,
   StandardizovaneAdresyOdpoved,
   VrOdpoved,
@@ -61,6 +62,12 @@ export interface SearchCompaniesParams {
   ico?: string[];
   sidloKodObce?: number;
   sidloPsc?: string;
+  /**
+   * Free-form ARES `sidlo` filter. Most usefully `{ textovaAdresa: "..." }`
+   * for natural-language address search; the spec also accepts numeric codes
+   * (kodObce, kodUlice, cisloDomovni, …).
+   */
+  sidlo?: Record<string, unknown>;
   pravniForma?: string[];
   czNace?: string[];
   pocet?: number;
@@ -99,6 +106,10 @@ export class AresClient {
 
   getRzpRecord(ico: string): Promise<RzpZaznam> {
     return this.get<RzpZaznam>(`/ekonomicke-subjekty-rzp/${encodeURIComponent(ico)}`);
+  }
+
+  getResRecord(ico: string): Promise<ResOdpoved> {
+    return this.get<ResOdpoved>(`/ekonomicke-subjekty-res/${encodeURIComponent(ico)}`);
   }
 
   searchAddresses(query: {

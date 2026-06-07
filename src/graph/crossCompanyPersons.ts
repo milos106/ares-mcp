@@ -17,6 +17,9 @@ export interface Membership {
   company?: string;
   funkce?: string;
   organ?: string;
+  /** Set when the membership has ended (historical entry). */
+  datumVymazu?: string | null;
+  datumZapisu?: string | null;
 }
 
 export interface SharedPerson {
@@ -33,10 +36,20 @@ export interface GraphResult {
   mermaid: string;
 }
 
+export interface BuildGraphOptions {
+  /**
+   * If true, also include members whose `datumVymazu` is set (= former
+   * statutaries). When combined with active members this surfaces nominee /
+   * musical-chair patterns invisible to a snapshot of just current members.
+   */
+  includeHistorical?: boolean;
+}
+
 /**
  * Build a person→companies cross-reference from a batch of VR responses.
  *
- * - Active members only (datumVymazu == null).
+ * - By default, active members only (`datumVymazu == null`). Pass
+ *   `{ includeHistorical: true }` to also include former members.
  * - Identity key = lastname + firstname + birth date. ARES does not expose
  *   rodné číslo via the public API, so collisions are possible but rare in
  *   practice for a small known set of IČOs.
@@ -45,7 +58,11 @@ export interface GraphResult {
  * - Legal-entity members (`pravnickaOsoba`) are tracked separately and also
  *   reported when shared.
  */
-export function buildCrossCompanyGraph(companies: CompanyInput[]): GraphResult {
+export function buildCrossCompanyGraph(
+  companies: CompanyInput[],
+  opts: BuildGraphOptions = {},
+): GraphResult {
+  const includeHistorical = opts.includeHistorical ?? false;
   const companyMeta: GraphResult["companies"] = [];
   // personKey → memberships
   const personMap = new Map<string, SharedPerson>();
@@ -58,8 +75,10 @@ export function buildCrossCompanyGraph(companies: CompanyInput[]): GraphResult {
     const obchodniJmeno = currentObchodniJmeno(primary);
     companyMeta.push({ ico, obchodniJmeno, vrFound: vr !== null && (vr.zaznamy?.length ?? 0) > 0 });
 
-    const members = flattenMembers(vr, { activeOnly: true });
-    totalActive += members.length;
+    const members = flattenMembers(vr, { activeOnly: !includeHistorical });
+    // totalActivePersons remains "active only" so the headline stays comparable
+    // across includeHistorical=true/false runs.
+    totalActive += members.filter((m) => !m.datumVymazu).length;
 
     for (const m of members) {
       if (m.fyzickaOsoba) {
@@ -78,6 +97,8 @@ export function buildCrossCompanyGraph(companies: CompanyInput[]): GraphResult {
           company: obchodniJmeno,
           funkce: m.funkce,
           organ: m.organName,
+          datumZapisu: m.datumZapisu ?? null,
+          datumVymazu: m.datumVymazu ?? null,
         });
       } else if (m.pravnickaOsoba?.ico) {
         const key = `LEGAL|${m.pravnickaOsoba.ico}`;
@@ -93,6 +114,8 @@ export function buildCrossCompanyGraph(companies: CompanyInput[]): GraphResult {
           company: obchodniJmeno,
           funkce: m.funkce,
           organ: m.organName,
+          datumZapisu: m.datumZapisu ?? null,
+          datumVymazu: m.datumVymazu ?? null,
         });
       }
     }

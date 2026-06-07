@@ -27,6 +27,8 @@
     "start:http": "node dist/http.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "config": "node scripts/print-config.mjs",
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
     "lint": "biome check src tests",
     "format": "biome format --write src tests",
     "typecheck": "tsc --noEmit"

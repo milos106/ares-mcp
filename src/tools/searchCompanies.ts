@@ -52,10 +52,18 @@ export const searchCompaniesTool = defineTool({
         );
       }
 
+      // Build the sidlo sub-filter. ARES expects nested codes, not flat
+      // params; sidloPsc / sidloKodObce on the top level were silently ignored.
+      const sidlo: Record<string, unknown> = {};
+      if (args.sidloPsc) {
+        const psc = Number(args.sidloPsc.replace(/\s/g, ""));
+        if (Number.isFinite(psc)) sidlo.psc = psc;
+      }
+      if (args.sidloKodObce !== undefined) sidlo.kodObce = args.sidloKodObce;
+
       const result = await client.searchEconomicSubjects({
         obchodniJmeno: args.obchodniJmeno,
-        sidloPsc: args.sidloPsc?.replace(/\s/g, ""),
-        sidloKodObce: args.sidloKodObce,
+        sidlo: Object.keys(sidlo).length > 0 ? sidlo : undefined,
         pravniForma: args.pravniForma,
         czNace: args.czNace,
         pocet: args.limit,
