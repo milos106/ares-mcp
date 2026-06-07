@@ -82,7 +82,7 @@ export class AresClient {
     // reserve the right to block access. We default to 5 req/s for headroom.
     this.bucket = createTokenBucket(opts.ratePerSecond ?? 5);
     this.userAgent =
-      opts.userAgent ?? "ares-mcp/0.1.0 (+https://github.com/milospospisil/ares-mcp)";
+      opts.userAgent ?? "ares-mcp/0.1.0 (+https://github.com/milos106/ares-mcp)";
   }
 
   getEconomicSubject(ico: string): Promise<EkonomickySubjekt> {

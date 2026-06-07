@@ -58,7 +58,7 @@ In Cursor settings → MCP servers, add:
 ### Local development
 
 ```sh
-git clone https://github.com/milospospisil/ares-mcp.git
+git clone https://github.com/milos106/ares-mcp.git
 cd ares-mcp
 npm install
 npm run build
