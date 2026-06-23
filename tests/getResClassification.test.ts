@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ResOdpoved } from "../src/ares/types.js";
 import { getResClassificationTool } from "../src/tools/getResClassification.js";
-import { loadFixture, makeMockClient } from "./_helpers/mockClient.js";
+import { loadFixture, makeMockClient, testProvenance } from "./_helpers/mockClient.js";
 
 const resAgrofert = loadFixture<ResOdpoved>("res_26185610_agrofert.json");
 
@@ -14,6 +14,7 @@ async function runRes(ico: string) {
     },
   } as any;
   getResClassificationTool.register(fakeServer, {
+    provenance: testProvenance(),
     client: makeMockClient({ res: { "26185610": resAgrofert } }),
   });
   // biome-ignore lint/suspicious/noExplicitAny: cb is captured

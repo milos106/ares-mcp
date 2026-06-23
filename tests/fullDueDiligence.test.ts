@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EkonomickySubjekt, RzpZaznam, VrOdpoved } from "../src/ares/types.js";
 import { fullDueDiligenceTool } from "../src/tools/fullDueDiligence.js";
-import { loadFixture, makeMockClient } from "./_helpers/mockClient.js";
+import { loadFixture, makeMockClient, testProvenance } from "./_helpers/mockClient.js";
 
 const liberty = loadFixture<EkonomickySubjekt>("subjekt_liberty_ostrava.json");
 const agrofert = loadFixture<EkonomickySubjekt>("subjekt_agrofert.json");
@@ -18,6 +18,7 @@ async function runDD(ico: string) {
     },
   } as any;
   fullDueDiligenceTool.register(fakeServer, {
+    provenance: testProvenance(),
     client: makeMockClient({
       subjects: { [liberty.ico]: liberty, [agrofert.ico]: agrofert },
       vr: { [liberty.ico]: vrLiberty, [agrofert.ico]: vrAgrofert },
@@ -77,6 +78,36 @@ describe("ares_full_due_diligence", () => {
     );
     expect(out._note).toMatch(/isir\.justice\.cz/);
     expect(out._note).toMatch(/adisspr\.mfcr\.cz/);
+  });
+
+  it("attaches a provenance envelope with sourced claims (unsigned in tests)", async () => {
+    const out = await runDD("26185610");
+    expect(out.provenance).toBeDefined();
+    expect(out.provenance.issuer).toBe("ares-provenance/v1");
+    expect(out.provenance.subject).toEqual({ ico: "26185610" });
+    // unsigned mode: no key configured in tests
+    expect(out.provenance.signature).toBeNull();
+    const predicates = out.provenance.claims.map((c: { predicate: string }) => c.predicate);
+    expect(predicates).toEqual(
+      expect.arrayContaining([
+        "legal_status",
+        "statutory_body",
+        "insolvency",
+        "vat_status",
+        "trade_licenses",
+        "risk_assessment",
+      ]),
+    );
+    // every claim carries a registry source + a date it is valid as of
+    for (const c of out.provenance.claims) {
+      expect(c.source.registry).toBeTruthy();
+      expect(c.source.as_of).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    // the risk verdict is flagged as our derived computation, not a registry fact
+    const risk = out.provenance.claims.find(
+      (c: { predicate: string }) => c.predicate === "risk_assessment",
+    );
+    expect(risk.confidence).toBe("derived");
   });
 
   it("rejects an invalid IČO before any network call", async () => {

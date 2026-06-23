@@ -3,6 +3,7 @@ import { validateIco } from "../ares/normalize.js";
 import type { EkonomickySubjekt, RzpZaznam, VrOdpoved } from "../ares/types.js";
 import { currentObchodniJmeno, flattenMembers, pickPrimaryZaznam } from "../ares/vr.js";
 import { InvalidInputError, NotFoundError } from "../errors.js";
+import type { Claim } from "../provenance/envelope.js";
 import {
   ARES_ATTRIBUTION,
   ARES_DISCLAIMER,
@@ -67,7 +68,8 @@ function buildMarkdown(report: {
   }
   lines.push("## Identification");
   lines.push(`- IČO: \`${report.ico}\``);
-  if (report.dic) lines.push(`- DIČ: \`${report.dic}\` (VAT payer: ${report.platceDph ? "yes" : "no"})`);
+  if (report.dic)
+    lines.push(`- DIČ: \`${report.dic}\` (VAT payer: ${report.platceDph ? "yes" : "no"})`);
   if (report.pravniForma) lines.push(`- Legal form: ${report.pravniForma}`);
   if (report.datumVzniku) lines.push(`- Founded: ${report.datumVzniku}`);
   if (report.datumZaniku) lines.push(`- Dissolved: **${report.datumZaniku}**`);
@@ -78,9 +80,7 @@ function buildMarkdown(report: {
   lines.push(`- Active statutary members: **${report.statutariCount}**`);
   lines.push("");
   lines.push("## Trade licenses");
-  lines.push(
-    `- Total: ${report.zivnostenskaCount} (active: ${report.zivnostenskaActiveCount})`,
-  );
+  lines.push(`- Total: ${report.zivnostenskaCount} (active: ${report.zivnostenskaActiveCount})`);
   lines.push("");
   lines.push("## Insolvency");
   lines.push(`- Insolvenční rejstřík: ${report.insolvenci.ir}`);
@@ -96,12 +96,17 @@ export const fullDueDiligenceTool = defineTool({
   description:
     "One-shot due-diligence report for a Czech company. Fetches the aggregate ARES profile, Public Register record (statutory bodies), Trade Register (licenses), evaluates insolvency status (IR + CEÚ) and dissolution date, and returns a structured report with a green/yellow/red risk flag plus a Markdown summary suitable for chat display. Replaces 4–5 individual lookups with a single call.",
   inputShape,
-  handler: async ({ ico }, { client }) => {
+  handler: async ({ ico }, { client, provenance }) => {
     try {
       const { valid, normalized, reason } = validateIco(ico);
       if (!valid || !normalized) {
         throw new InvalidInputError(`Invalid IČO: ${ico}`, { reason });
       }
+
+      // Single timestamp for this call: every claim's `fetched_at` and the
+      // envelope's `issued_at` share it, so provenance is internally consistent.
+      const fetchedAt = new Date().toISOString();
+      const asOf = fetchedAt.slice(0, 10);
 
       // Run the three independent ARES calls in parallel. Catch missing
       // sub-records (some entities are in ARES but not in VR/RŽP).
@@ -140,12 +145,12 @@ export const fullDueDiligenceTool = defineTool({
       const dic = subject.dic ?? null;
 
       // CZ-NACE
-      const czNace =
-        (subject as { czNace2008?: string[] }).czNace2008 ?? subject.czNace ?? [];
+      const czNace = (subject as { czNace2008?: string[] }).czNace2008 ?? subject.czNace ?? [];
 
       // Risk scoring — conservative, prefer false positives over missed flags
       const findings: RiskFinding[] = [];
-      if (isInsolvent) findings.push({ level: "red", message: "Active insolvency or bankruptcy on record." });
+      if (isInsolvent)
+        findings.push({ level: "red", message: "Active insolvency or bankruptcy on record." });
       if (subject.datumZaniku) {
         findings.push({
           level: "red",
@@ -155,7 +160,8 @@ export const fullDueDiligenceTool = defineTool({
       if (statutariCount === 0 && !subject.datumZaniku) {
         findings.push({
           level: "yellow",
-          message: "No active statutory body members in the Public Register — verify before contracting.",
+          message:
+            "No active statutory body members in the Public Register — verify before contracting.",
         });
       }
       if (hadInsolvencyHistory && !isInsolvent) {
@@ -167,7 +173,8 @@ export const fullDueDiligenceTool = defineTool({
       if (!dphActive && dic) {
         findings.push({
           level: "yellow",
-          message: "DIČ on record but VAT registration is not active — verify with MFČR if invoicing as VAT payer.",
+          message:
+            "DIČ on record but VAT registration is not active — verify with MFČR if invoicing as VAT payer.",
         });
       }
       if (rzp && allLicenses.length > 0 && activeLicenses.length === 0) {
@@ -200,6 +207,88 @@ export const fullDueDiligenceTool = defineTool({
         czNace,
         risk: { level: riskLevel, findings },
       });
+
+      // Provenance claims — each fact carries its registry source + date, so a
+      // verifier can confirm where it came from, not just that we said it. The
+      // risk verdict is `derived` (our computation); the rest are `primary`
+      // (straight from the relevant ARES sub-source).
+      const aresSource = (path: string, registry: string) => ({
+        registry,
+        endpoint: `ARES ${path.replace("{ico}", normalized)}`,
+        fetched_at: fetchedAt,
+        as_of: asOf,
+      });
+      const claims: Claim[] = [
+        {
+          predicate: "legal_status",
+          value: {
+            obchodniJmeno,
+            pravniForma: subject.pravniForma ?? null,
+            datumVzniku: subject.datumVzniku ?? null,
+            datumZaniku: subject.datumZaniku ?? null,
+            sidlo: sidloText ?? null,
+          },
+          source: aresSource("/ekonomicke-subjekty/{ico}", "ARES"),
+          confidence: "primary",
+        },
+        {
+          predicate: "statutory_body",
+          value: {
+            aktivniCount: statutariCount,
+            clenove: members.map((m) => ({
+              funkce: m.funkce,
+              jmeno: m.fyzickaOsoba
+                ? `${m.fyzickaOsoba.jmeno ?? ""} ${m.fyzickaOsoba.prijmeni ?? ""}`.trim()
+                : m.pravnickaOsoba?.obchodniJmeno,
+            })),
+          },
+          source: aresSource("/ekonomicke-subjekty-vr/{ico}", "OR"),
+          confidence: "primary",
+        },
+        {
+          predicate: "insolvency",
+          value: {
+            isInsolvent,
+            hadHistory: hadInsolvencyHistory,
+            insolvencniRejstrik: ir,
+            centralniEvidenceUpadcu: ceu,
+          },
+          source: aresSource("/ekonomicke-subjekty/{ico}", "ISIR"),
+          confidence: "primary",
+        },
+        {
+          predicate: "vat_status",
+          value: { platceDph: dphActive, dic },
+          source: aresSource("/ekonomicke-subjekty/{ico}", "ADIS"),
+          confidence: "primary",
+        },
+        {
+          predicate: "trade_licenses",
+          value: { total: allLicenses.length, aktivni: activeLicenses.length },
+          source: aresSource("/ekonomicke-subjekty-rzp/{ico}", "RŽP"),
+          confidence: "primary",
+        },
+        {
+          predicate: "risk_assessment",
+          // `disclaimer` limits liability exposure under § 2950 OZ (paid expert
+          // advice): the score is an orientation flag, not a recommendation to
+          // act. See agentData/pravni-reserse.md §3.
+          value: {
+            level: riskLevel,
+            findings,
+            disclaimer:
+              "Orientační ukazatel rizika z veřejných dat ARES; nejde o doporučení k obchodnímu rozhodnutí. Ověřte v primárních zdrojích.",
+          },
+          source: {
+            registry: "ares-mcp/derived",
+            fetched_at: fetchedAt,
+            as_of: asOf,
+          },
+          confidence: "derived",
+        },
+      ];
+
+      const envelope = provenance.seal({ subject: { ico: normalized }, claims, valid_as_of: asOf });
 
       return jsonResult({
         ico: normalized,
@@ -242,6 +331,11 @@ export const fullDueDiligenceTool = defineTool({
           centralniEvidenceUpadcu: ceu,
         },
         markdown,
+        // Signed provenance envelope (#4): claims + per-fact source/date +
+        // Ed25519 signature. Verify offline against the JWKS at
+        // /.well-known/ares-provenance/keys.json. `signature` is null when the
+        // server runs without ARES_PROVENANCE_PRIVATE_KEY (unsigned mode).
+        provenance: envelope,
         _disclaimer: ARES_DISCLAIMER,
         _attribution: ARES_ATTRIBUTION,
         _sources: [

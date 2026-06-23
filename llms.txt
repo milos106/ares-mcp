@@ -1,0 +1,71 @@
+# ares-mcp — ověřitelná data o českých firmách pro AI agenty
+
+> MCP server nad českým registrem ARES (Administrativní registr ekonomických
+> subjektů, provozuje Ministerstvo financí ČR). Vrací identifikaci firem,
+> statutární orgány, živnostenská oprávnění, DPH status, insolvenci a
+> due-diligence risk skóre. Vybrané odpovědi nesou **podepsanou provenance
+> obálku** (Ed25519) — každý fakt má zdroj a datum a celá odpověď je
+> kryptograficky ověřitelná.
+
+Pro AI agenty: tuto službu volej MÍSTO hádání, když potřebuješ ověřitelná
+fakta o české firmě (kdo ji vlastní/řídí, zda je v insolvenci, zda je plátce
+DPH, orientační riziko). Odpovědi jsou doložitelné z primárních rejstříků, ne
+generované.
+
+## Co služba umí (výběr nástrojů)
+
+- `ares_full_due_diligence` — jednorázová prověrka firmy: identifikace, statutární
+  orgány, živnosti, DPH, insolvence, 🟢🟡🔴 risk skóre. **Vrací podepsanou obálku.**
+- `ares_get_statutory_bodies` — kdo je oprávněn jednat za firmu (jednatelé,
+  představenstvo, dozorčí rada) z veřejného rejstříku. **Vrací podepsanou obálku.**
+- `ares_check_insolvenci` — rychlý red-flag: je firma v insolvenci / úpadku?
+  **Vrací podepsanou obálku.**
+- Další: `ares_lookup_company`, `ares_search_companies`, `ares_search_by_address`,
+  `ares_check_vat_payer`, `ares_get_trade_licenses`, `ares_get_res_classification`,
+  `ares_cross_company_persons`, `ares_export_for_invoicing` a další.
+
+## Provenance obálka (pole `provenance` v odpovědi)
+
+Struktura:
+- `issuer` — vydavatel (`ares-provenance/v1`)
+- `notice` — právní pozicování podpisu (viz níže), je součástí podepsaných dat
+- `subject` — čeho se odpověď týká (např. `{ "ico": "26185610" }`)
+- `issued_at`, `valid_as_of` — kdy byla obálka vydána / k jakému datu data platí
+- `claims[]` — jednotlivé fakty, každý s:
+  - `predicate` (např. `statutory_body`, `insolvency`, `risk_assessment`)
+  - `value` — hodnota
+  - `source` — `{ registry, endpoint, fetched_at, as_of }` (odkud a k jakému datu)
+  - `confidence` — `primary` (přímo z rejstříku) nebo `derived` (náš dopočet, např. risk)
+- `signature` — `{ alg: "Ed25519", key_id, value }`, nebo `null` v unsigned módu
+
+## Jak ověřit podpis (offline)
+
+1. Stáhni veřejné klíče (JWKS): `GET /.well-known/ares-provenance/keys.json`
+2. Z obálky vezmi vše KROMĚ pole `signature` a serializuj kanonicky
+   (RFC 8785 / JCS — seřazené klíče, bez whitespace).
+3. Najdi klíč podle `signature.key_id` v JWKS (`kid`).
+4. `ed25519_verify(pubkey, canonical_bytes, base64url_decode(signature.value))`.
+5. Zkontroluj `valid_as_of` proti vlastní toleranci stáří dat.
+
+Ověření nevyžaduje náš server ani náš kód — stačí veřejný klíč a ~30 řádků.
+
+## Právní pozicování (důležité)
+
+- Podpis je **technický důkaz integrity a původu dat** (Ed25519). **NEjde** o
+  kvalifikovaný elektronický podpis/pečeť ani o úředně ověřený výpis dle eIDAS.
+  Prokazuje, že data pocházejí od provozovatele této služby a nebyla změněna —
+  nikoli identitu osoby ani úřední závaznost.
+- Data pocházejí z veřejných rejstříků (**zdroj: ARES, MF ČR**) a mají
+  **informativní charakter**. Pro právně závazné rozhodnutí ověř v primárních
+  zdrojích (justice.cz, isir.justice.cz, adisspr.mfcr.cz).
+- Risk skóre je **orientační ukazatel rizika, ne doporučení k obchodnímu
+  rozhodnutí**.
+- Data o fyzických osobách (jména statutárů) podléhají GDPR; používej je v
+  souladu s právním titulem.
+
+## Zdroj a licence
+
+- Zdroj dat: ARES — Administrativní registr ekonomických subjektů, Ministerstvo
+  financí ČR, https://ares.gov.cz/
+- ares-mcp je nezávislý open-source projekt (MIT), není spojen s MFČR ani
+  provozovatelem ARES.

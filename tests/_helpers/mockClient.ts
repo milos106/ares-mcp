@@ -12,12 +12,9 @@ import type {
   VrOdpoved,
 } from "../../src/ares/types.js";
 import { NotFoundError } from "../../src/errors.js";
+import { type ProvenanceService, createProvenanceService } from "../../src/provenance/service.js";
 
-const FIXTURES = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "fixtures",
-);
+const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 
 function loadFixture<T>(name: string): T {
   return JSON.parse(fs.readFileSync(path.join(FIXTURES, name), "utf8")) as T;
@@ -85,3 +82,13 @@ export function makeMockClient(responses: MockResponses): AresClient {
 
 export const FIXTURES_DIR = FIXTURES;
 export { loadFixture };
+
+/**
+ * Provenance service for tool tests. With no key in the (empty) env it runs in
+ * unsigned mode, so tool outputs still carry the envelope + claims but
+ * `signature` is null — keeping these tests free of key material. Sign/verify
+ * round-trips are covered separately in provenance.test.ts.
+ */
+export function testProvenance(): ProvenanceService {
+  return createProvenanceService({});
+}
