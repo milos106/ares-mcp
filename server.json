@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.milos106/ares-mcp",
-  "description": "MCP server for ARES, the Czech business registry — company lookup, due diligence, statutory bodies, insolvency, with optional Ed25519-signed provenance.",
+  "description": "MCP for ARES, the Czech business registry: lookup, due diligence, insolvency, signed provenance",
   "title": "ARES (Czech business registry)",
   "websiteUrl": "https://icovazby.cz/?utm_source=ares-mcp",
   "repository": {
