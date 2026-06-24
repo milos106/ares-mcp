@@ -29,8 +29,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { AresClient } from "./ares/client.js";
+import { type AresWebClient, createAresWebClientFromEnv } from "./aresWeb/client.js";
 import { type ProvenanceService, createProvenanceService } from "./provenance/service.js";
-import { ALL_TOOLS } from "./tools/index.js";
+import { buildToolset } from "./tools/index.js";
 
 const SERVER_NAME = "ares-mcp";
 const SERVER_VERSION = "0.1.0";
@@ -158,10 +159,15 @@ function handleCors(req: IncomingMessage, res: ServerResponse): boolean {
   return true;
 }
 
-function buildServer(client: AresClient, provenance: ProvenanceService): McpServer {
+function buildServer(
+  client: AresClient,
+  provenance: ProvenanceService,
+  aresWeb: AresWebClient | null,
+): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
-  for (const tool of ALL_TOOLS) {
-    tool.register(server, { client, provenance });
+  const ctx = { client, provenance, aresWeb };
+  for (const tool of buildToolset(ctx)) {
+    tool.register(server, ctx);
   }
   return server;
 }
@@ -186,6 +192,7 @@ async function main(): Promise<void> {
   });
 
   const provenance = createProvenanceService();
+  const aresWeb = createAresWebClientFromEnv();
 
   const httpServer = createServer(async (req, res) => {
     try {
@@ -268,7 +275,7 @@ async function main(): Promise<void> {
           transport.onclose = () => {
             if (transport.sessionId) sessions.delete(transport.sessionId);
           };
-          const mcpServer = buildServer(client, provenance);
+          const mcpServer = buildServer(client, provenance, aresWeb);
           await mcpServer.connect(transport);
           await transport.handleRequest(req, res, parsedBody);
           if (transport.sessionId) {
@@ -320,7 +327,14 @@ async function main(): Promise<void> {
     log(
       `config: rate ${RATE_LIMIT_PER_MIN}/min/ip, body ${MAX_BODY_BYTES}B, session TTL ${SESSION_TTL_MS}ms`,
     );
-    log(`tools: ${ALL_TOOLS.length}`);
+    const toolCount = buildToolset({ client, provenance, aresWeb }).length;
+    log(
+      `tools: ${toolCount}${
+        aresWeb
+          ? " (moat tools enabled via ARES_WEB_URL)"
+          : " (moat tools disabled — ARES_WEB_URL unset)"
+      }`,
+    );
     log(
       `provenance: ${
         provenance.enabled
