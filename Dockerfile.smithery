@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+# Smithery-hosted variant: serves the MCP HTTP transport on $PORT at POST /mcp.
+# The main ./Dockerfile is the stdio image referenced by server.json / the MCP Registry.
+
+FROM node:20-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build /app/dist ./dist
+COPY llms.txt README.md LICENSE ./
+
+# Smithery injects PORT; http.ts reads it (default 3030) and serves POST /mcp + GET /healthz.
+EXPOSE 3030
+CMD ["node", "dist/http.js"]
