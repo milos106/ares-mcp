@@ -11,10 +11,8 @@
   "version": "0.1.0",
   "packages": [
     {
-      "registryType": "npm",
-      "registryBaseUrl": "https://registry.npmjs.org",
-      "identifier": "ares-mcp",
-      "version": "0.1.0",
+      "registryType": "oci",
+      "identifier": "ghcr.io/milos106/ares-mcp:0.1.0",
       "transport": {
         "type": "stdio"
       },
