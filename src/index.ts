@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AresClient } from "./ares/client.js";
+import { createAresWebClientFromEnv } from "./aresWeb/client.js";
 import { createProvenanceService } from "./provenance/service.js";
-import { ALL_TOOLS } from "./tools/index.js";
+import { buildToolset } from "./tools/index.js";
 
 const SERVER_NAME = "ares-mcp";
 const SERVER_VERSION = "0.1.0";
@@ -21,17 +22,23 @@ async function main(): Promise<void> {
   });
 
   const provenance = createProvenanceService();
+  const aresWeb = createAresWebClientFromEnv();
 
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
-  for (const tool of ALL_TOOLS) {
-    tool.register(server, { client, provenance });
+  const ctx = { client, provenance, aresWeb };
+  const tools = buildToolset(ctx);
+  for (const tool of tools) {
+    tool.register(server, ctx);
   }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  const moatCount = tools.filter((t) => t.tier === "moat").length;
   log(
-    `ready — registered ${ALL_TOOLS.length} tools over stdio` +
+    `ready — registered ${tools.length} tools over stdio (${moatCount} moat${
+      aresWeb ? "" : ", ARES_WEB_URL unset → moat tools disabled"
+    })` +
       ` (provenance signing: ${provenance.enabled ? `on, key ${provenance.signer?.keyId}` : "off"})`,
   );
 }
