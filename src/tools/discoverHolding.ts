@@ -22,10 +22,10 @@ const inputShape = {
   maxIcos: z
     .number()
     .int()
-    .min(1)
+    .min(5)
     .max(200)
     .default(50)
-    .describe("Max number of companies to return."),
+    .describe("Max number of companies to return (min 5)."),
 };
 
 export const discoverHoldingTool = defineTool({
