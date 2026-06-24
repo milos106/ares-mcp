@@ -1,10 +1,29 @@
 {
   "name": "ares-mcp",
   "version": "0.1.0",
-  "private": true,
-  "description": "MCP server for ARES — Czech business registry. Local-only project; not distributed via npm.",
+  "private": false,
+  "description": "MCP server for ARES, the Czech business registry — company lookup, due diligence, statutory bodies, insolvency, with optional Ed25519-signed provenance.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ares",
+    "czech",
+    "business-registry",
+    "due-diligence",
+    "kyc",
+    "company-data",
+    "provenance"
+  ],
   "license": "MIT",
   "author": "milos106 <max118@seznam.cz>",
+  "homepage": "https://icovazby.cz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/milos106/ares-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/milos106/ares-mcp/issues"
+  },
   "type": "module",
   "bin": {
     "ares-mcp": "./dist/index.js",

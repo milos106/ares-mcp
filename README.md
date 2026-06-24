@@ -2,7 +2,7 @@
 
 > **MCP server for ARES — the Czech business registry.** Validate IČO/DIČ, look up companies, statutory bodies, trade licenses and addresses directly from Claude Desktop, Claude Code, Cursor and any other MCP-compatible client.
 >
-> **Local-only project.** Not distributed via npm; intended for personal / private use from this repository.
+> **Open-source (MIT), self-hosted.** Runs against the public ARES API — your queries never leave your machine. Optionally emits **Ed25519-signed, sourced answers** so anyone can verify their integrity and origin offline.
 
 ARES (Administrativní registr ekonomických subjektů) is the official public registry of Czech businesses, operated by the Czech Ministry of Finance (MFČR). This project is an **independent, community-built** MCP server that calls the public ARES REST API.
 
@@ -11,13 +11,14 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 - **Free, MIT-licensed code.** No API key required (ARES is a public API).
 - **14 stable tools** covering the full due-diligence + invoicing workflow: validation, lookup, structured search, **search-by-address** (virtual-office detection), statutory bodies, trade licenses, VAT check, address standardization, NACE lookup, **RES statistical classification** (size bracket, ESA 2010 sector), **insolvency check**, **cross-company person graph** with Mermaid + optional historical mode for nominee detection, a one-shot `ares_full_due_diligence` macro with 🟢🟡🔴 risk flag, and an **export adapter** that emits Fakturoid / iDoklad / Pohoda payloads ready to POST.
 - **Two transports.** Stdio (default) for local AI clients, Streamable HTTP (`/mcp`) for remote / web deployment.
+- **Verifiable provenance (optional).** With a signing key set, the due-diligence, statutory-bodies and insolvency tools return a signed envelope where every fact carries its registry source + date; verify it offline against the published JWKS. A *technical integrity & origin proof — not a qualified e-signature or an official extract.*
 - **Defensive by design.** Rate-limit aware (token bucket + exponential backoff with `Retry-After`), per-IP request throttling on the HTTP variant, structured errors, no PII stored or logged by default.
 
 ---
 
 ## Setup
 
-This project is not on npm. Clone the repo and build it once, then point your MCP client at the local `dist/index.js`.
+Install from source (an npm package is planned). Clone, build once, then point your MCP client at `dist/index.js`.
 
 ```sh
 git clone git@github.com:milos106/ares-mcp.git
