@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EkonomickySubjekt } from "../src/ares/types.js";
 import { checkInsolvenciTool } from "../src/tools/checkInsolvenci.js";
-import { loadFixture, makeMockClient } from "./_helpers/mockClient.js";
+import { loadFixture, makeMockClient, testProvenance } from "./_helpers/mockClient.js";
 
 const liberty = loadFixture<EkonomickySubjekt>("subjekt_liberty_ostrava.json");
 const agrofert = loadFixture<EkonomickySubjekt>("subjekt_agrofert.json");
@@ -16,6 +16,7 @@ async function runTool(ico: string) {
     // biome-ignore lint/suspicious/noExplicitAny: minimal fake McpServer
   } as any;
   checkInsolvenciTool.register(fakeServer, {
+    provenance: testProvenance(),
     client: makeMockClient({
       subjects: { [liberty.ico]: liberty, [agrofert.ico]: agrofert },
     }),
@@ -49,5 +50,16 @@ describe("ares_check_insolvenci", () => {
   it("rejects an IČO that fails the Mod-11 checksum", async () => {
     const out = await runTool("11111111");
     expect(out.error).toBe("INVALID_INPUT");
+  });
+
+  it("attaches a signed-shape provenance envelope with one insolvency claim", async () => {
+    const out = await runTool("45193258");
+    expect(out.provenance.issuer).toBe("ares-provenance/v1");
+    expect(out.provenance.notice).toMatch(/Nejedná se o kvalifikovaný/);
+    expect(out.provenance.signature).toBeNull(); // unsigned in tests
+    expect(out.provenance.claims).toHaveLength(1);
+    expect(out.provenance.claims[0].predicate).toBe("insolvency");
+    expect(out.provenance.claims[0].source.registry).toBe("ISIR");
+    expect(out.provenance.claims[0].value.isInsolvent).toBe(true);
   });
 });

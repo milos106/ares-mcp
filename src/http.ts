@@ -21,11 +21,15 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { AresClient } from "./ares/client.js";
+import { type ProvenanceService, createProvenanceService } from "./provenance/service.js";
 import { ALL_TOOLS } from "./tools/index.js";
 
 const SERVER_NAME = "ares-mcp";
@@ -40,6 +44,17 @@ function parseEnvNumber(value: string | undefined, fallback: number): number {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
+
+// llms.txt lives at the repo root; from both src/http.ts (tsx dev) and
+// dist/http.js (built) the relative parent is the project root. Read once at
+// startup; missing file is non-fatal (route just 404s).
+const LLMS_TXT = (() => {
+  try {
+    return readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../llms.txt"), "utf8");
+  } catch {
+    return null;
+  }
+})();
 
 const PORT = parseEnvNumber(process.env.PORT, 3030);
 const MAX_BODY_BYTES = parseEnvNumber(process.env.ARES_HTTP_MAX_BODY, 1_000_000);
@@ -143,10 +158,10 @@ function handleCors(req: IncomingMessage, res: ServerResponse): boolean {
   return true;
 }
 
-function buildServer(client: AresClient): McpServer {
+function buildServer(client: AresClient, provenance: ProvenanceService): McpServer {
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
   for (const tool of ALL_TOOLS) {
-    tool.register(server, { client });
+    tool.register(server, { client, provenance });
   }
   return server;
 }
@@ -170,9 +185,34 @@ async function main(): Promise<void> {
     retries: parseEnvNumber(process.env.ARES_RETRIES, 3),
   });
 
+  const provenance = createProvenanceService();
+
   const httpServer = createServer(async (req, res) => {
     try {
       if (handleCors(req, res)) return;
+
+      // Public verification endpoint: verifiers fetch the signing public keys
+      // here (offline-cacheable) to check provenance envelope signatures.
+      if (req.method === "GET" && req.url === "/.well-known/ares-provenance/keys.json") {
+        res.setHeader("cache-control", "public, max-age=3600");
+        sendJson(res, 200, provenance.jwks());
+        return;
+      }
+
+      // Discoverability for AI agents (AEO): static llms.txt at the web root.
+      if (req.method === "GET" && req.url === "/llms.txt") {
+        if (!LLMS_TXT) {
+          sendJson(res, 404, { error: "NOT_FOUND", message: "llms.txt not available" });
+          return;
+        }
+        res.writeHead(200, {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "public, max-age=3600",
+          ...(ALLOW_ORIGIN ? { "access-control-allow-origin": ALLOW_ORIGIN } : {}),
+        });
+        res.end(LLMS_TXT);
+        return;
+      }
 
       if (req.method === "GET" && req.url === "/healthz") {
         sendJson(res, 200, {
@@ -228,7 +268,7 @@ async function main(): Promise<void> {
           transport.onclose = () => {
             if (transport.sessionId) sessions.delete(transport.sessionId);
           };
-          const mcpServer = buildServer(client);
+          const mcpServer = buildServer(client, provenance);
           await mcpServer.connect(transport);
           await transport.handleRequest(req, res, parsedBody);
           if (transport.sessionId) {
@@ -266,7 +306,7 @@ async function main(): Promise<void> {
 
       sendJson(res, 405, { error: "METHOD_NOT_ALLOWED" });
     } catch (err) {
-      log("request error:", err instanceof Error ? err.stack ?? err.message : String(err));
+      log("request error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
       if (!res.headersSent) {
         sendJson(res, 500, { error: "INTERNAL_ERROR" });
       } else {
@@ -281,6 +321,13 @@ async function main(): Promise<void> {
       `config: rate ${RATE_LIMIT_PER_MIN}/min/ip, body ${MAX_BODY_BYTES}B, session TTL ${SESSION_TTL_MS}ms`,
     );
     log(`tools: ${ALL_TOOLS.length}`);
+    log(
+      `provenance: ${
+        provenance.enabled
+          ? `signing on (key ${provenance.signer?.keyId}), JWKS at /.well-known/ares-provenance/keys.json`
+          : "signing off (set ARES_PROVENANCE_PRIVATE_KEY to enable)"
+      }`,
+    );
   });
 
   const shutdown = (signal: string) => {
@@ -294,6 +341,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  log("fatal:", err instanceof Error ? err.stack ?? err.message : String(err));
+  log("fatal:", err instanceof Error ? (err.stack ?? err.message) : String(err));
   process.exit(1);
 });

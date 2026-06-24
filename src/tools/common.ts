@@ -2,9 +2,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { z } from "zod";
 import type { AresClient } from "../ares/client.js";
 import { toToolErrorPayload } from "../errors.js";
+import type { ProvenanceService } from "../provenance/service.js";
 
 export interface ToolContext {
   client: AresClient;
+  /** Signs tool outputs into provenance envelopes (see provenance/service.ts). */
+  provenance: ProvenanceService;
 }
 
 export interface ToolResult {
@@ -16,10 +19,7 @@ export interface ToolDefinition<TShape extends z.ZodRawShape = z.ZodRawShape> {
   name: string;
   description: string;
   inputShape: TShape;
-  handler: (
-    args: z.infer<z.ZodObject<TShape>>,
-    ctx: ToolContext,
-  ) => Promise<ToolResult>;
+  handler: (args: z.infer<z.ZodObject<TShape>>, ctx: ToolContext) => Promise<ToolResult>;
 }
 
 /**

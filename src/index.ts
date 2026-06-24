@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { AresClient } from "./ares/client.js";
+import { createProvenanceService } from "./provenance/service.js";
 import { ALL_TOOLS } from "./tools/index.js";
 
 const SERVER_NAME = "ares-mcp";
@@ -19,15 +20,20 @@ async function main(): Promise<void> {
     retries: parseEnvNumber(process.env.ARES_RETRIES, 3),
   });
 
+  const provenance = createProvenanceService();
+
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
   for (const tool of ALL_TOOLS) {
-    tool.register(server, { client });
+    tool.register(server, { client, provenance });
   }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  log(`ready — registered ${ALL_TOOLS.length} tools over stdio`);
+  log(
+    `ready — registered ${ALL_TOOLS.length} tools over stdio` +
+      ` (provenance signing: ${provenance.enabled ? `on, key ${provenance.signer?.keyId}` : "off"})`,
+  );
 }
 
 function parseEnvNumber(value: string | undefined, fallback: number): number {
@@ -37,6 +43,6 @@ function parseEnvNumber(value: string | undefined, fallback: number): number {
 }
 
 main().catch((err) => {
-  log("fatal:", err instanceof Error ? err.stack ?? err.message : String(err));
+  log("fatal:", err instanceof Error ? (err.stack ?? err.message) : String(err));
   process.exit(1);
 });

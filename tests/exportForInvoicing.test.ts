@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EkonomickySubjekt } from "../src/ares/types.js";
 import { exportForInvoicingTool } from "../src/tools/exportForInvoicing.js";
-import { loadFixture, makeMockClient } from "./_helpers/mockClient.js";
+import { loadFixture, makeMockClient, testProvenance } from "./_helpers/mockClient.js";
 
 const agrofert = loadFixture<EkonomickySubjekt>("subjekt_agrofert.json");
 
@@ -14,6 +14,7 @@ async function runExport(ico: string, target: "fakturoid" | "idoklad" | "pohoda"
     },
   } as any;
   exportForInvoicingTool.register(fakeServer, {
+    provenance: testProvenance(),
     client: makeMockClient({ subjects: { "26185610": agrofert } }),
   });
   // biome-ignore lint/suspicious/noExplicitAny: cb is captured

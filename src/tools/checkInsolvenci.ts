@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { validateIco } from "../ares/normalize.js";
 import { InvalidInputError } from "../errors.js";
+import type { Claim } from "../provenance/envelope.js";
 import {
   ARES_ATTRIBUTION,
   ARES_DISCLAIMER,
@@ -40,12 +41,15 @@ export const checkInsolvenciTool = defineTool({
   description:
     "Fast red-flag check: is a Czech entity currently in insolvency proceedings or marked as bankrupt? Reads the ARES `seznamRegistraci` for the Insolvency Register (IR) and Central Bankruptcy Register (CEÚ). Returns a clear true/false on `isInsolvent` plus the underlying state codes. Useful as a pre-contract sanity check.",
   inputShape,
-  handler: async ({ ico }, { client }) => {
+  handler: async ({ ico }, { client, provenance }) => {
     try {
       const { valid, normalized, reason } = validateIco(ico);
       if (!valid || !normalized) {
         throw new InvalidInputError(`Invalid IČO: ${ico}`, { reason });
       }
+
+      const fetchedAt = new Date().toISOString();
+      const asOf = fetchedAt.slice(0, 10);
 
       const subject = await client.getEconomicSubject(normalized);
       const reg = subject.seznamRegistraci ?? {};
@@ -58,13 +62,32 @@ export const checkInsolvenciTool = defineTool({
 
       const notes: string[] = [];
       if (ir === "ACTIVE") notes.push("Active insolvency proceedings (Insolvenční rejstřík).");
-      if (ceu === "ACTIVE")
-        notes.push("Listed in the Central Bankruptcy Register (CEÚ).");
+      if (ceu === "ACTIVE") notes.push("Listed in the Central Bankruptcy Register (CEÚ).");
       if (ir === "ENDED")
         notes.push("Past insolvency proceedings — closed, but indicates historical distress.");
-      if (ceu === "ENDED")
-        notes.push("Past CEÚ entry — historical bankruptcy, no longer current.");
+      if (ceu === "ENDED") notes.push("Past CEÚ entry — historical bankruptcy, no longer current.");
       if (subject.datumZaniku) notes.push(`Entity dissolved on ${subject.datumZaniku}.`);
+
+      const claims: Claim[] = [
+        {
+          predicate: "insolvency",
+          value: {
+            isInsolvent,
+            hadHistory,
+            insolvencniRejstrik: ir,
+            centralniEvidenceUpadcu: ceu,
+            datumZaniku: subject.datumZaniku ?? null,
+          },
+          source: {
+            registry: "ISIR",
+            endpoint: `ARES /ekonomicke-subjekty/${normalized} → seznamRegistraci`,
+            fetched_at: fetchedAt,
+            as_of: asOf,
+          },
+          confidence: "primary",
+        },
+      ];
+      const envelope = provenance.seal({ subject: { ico: normalized }, claims, valid_as_of: asOf });
 
       return jsonResult({
         ico: normalized,
@@ -75,6 +98,7 @@ export const checkInsolvenciTool = defineTool({
         centralniEvidenceUpadcu: { state: ceu, raw: ceuRaw },
         datumZaniku: subject.datumZaniku ?? null,
         notes,
+        provenance: envelope,
         _disclaimer: ARES_DISCLAIMER,
         _attribution: ARES_ATTRIBUTION,
         _source: "ARES /ekonomicke-subjekty/{ico} → seznamRegistraci.{stavZdrojeIr, stavZdrojeCeu}",

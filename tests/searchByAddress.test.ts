@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { EkonomickeSubjektySeznam, EkonomickeSubjektySeznam as Search } from "../src/ares/types.js";
+import type {
+  EkonomickeSubjektySeznam,
+  EkonomickeSubjektySeznam as Search,
+} from "../src/ares/types.js";
 import { searchByAddressTool } from "../src/tools/searchByAddress.js";
-import { loadFixture, makeMockClient } from "./_helpers/mockClient.js";
+import { loadFixture, makeMockClient, testProvenance } from "./_helpers/mockClient.js";
 
 const search = loadFixture<EkonomickeSubjektySeznam>("search_address_liberty.json");
 
@@ -14,6 +17,7 @@ async function runSearch(input: { adresa: string; limit?: number; offset?: numbe
     },
   } as any;
   searchByAddressTool.register(fakeServer, {
+    provenance: testProvenance(),
     client: makeMockClient({ search }),
   });
   // biome-ignore lint/suspicious/noExplicitAny: cb is captured
