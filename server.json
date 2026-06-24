@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.milos106/ares-mcp",
+  "description": "MCP server for ARES, the Czech business registry — company lookup, due diligence, statutory bodies, insolvency, with optional Ed25519-signed provenance.",
+  "title": "ARES (Czech business registry)",
+  "websiteUrl": "https://icovazby.cz/?utm_source=ares-mcp",
+  "repository": {
+    "url": "https://github.com/milos106/ares-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "ares-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ARES_PROVENANCE_PRIVATE_KEY",
+          "description": "Optional Ed25519 private key (base64 PKCS#8 DER) to enable signed provenance envelopes. Omit to run unsigned.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ARES_PROVENANCE_KEY_ID",
+          "description": "Optional key id advertised in signed envelopes and the JWKS. Defaults to a thumbprint of the public key.",
+          "isRequired": false
+        },
+        {
+          "name": "ARES_BASE_URL",
+          "description": "Optional override of the ARES REST base URL (defaults to the public ares.gov.cz endpoint).",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

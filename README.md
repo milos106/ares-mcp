@@ -3,6 +3,8 @@
 > **MCP server for ARES — the Czech business registry.** Validate IČO/DIČ, look up companies, statutory bodies, trade licenses and addresses directly from Claude Desktop, Claude Code, Cursor and any other MCP-compatible client.
 >
 > **Open-source (MIT), self-hosted.** Runs against the public ARES API — your queries never leave your machine. Optionally emits **Ed25519-signed, sourced answers** so anyone can verify their integrity and origin offline.
+>
+> **Hosted version:** [icovazby.cz](https://icovazby.cz/?utm_source=ares-mcp) — full web company-checks across 10+ Czech registers (ARES, Public Register, trade licenses, insolvency, sanctions, …).
 
 ARES (Administrativní registr ekonomických subjektů) is the official public registry of Czech businesses, operated by the Czech Ministry of Finance (MFČR). This project is an **independent, community-built** MCP server that calls the public ARES REST API.
 
@@ -320,6 +322,7 @@ before submitting.
 
 ## Links
 
+- [icovazby.cz — hosted company checks](https://icovazby.cz/?utm_source=ares-mcp)
 - [ARES portal](https://ares.gov.cz/)
 - [ARES OpenAPI spec](https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/v3/api-docs)
 - [ARES Swagger UI](https://ares.gov.cz/swagger-ui/)
