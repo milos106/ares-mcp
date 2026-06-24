@@ -3,7 +3,7 @@
   "name": "io.github.milos106/ares-mcp",
   "description": "MCP server for ARES, the Czech business registry — company lookup, due diligence, statutory bodies, insolvency, with optional Ed25519-signed provenance.",
   "title": "ARES (Czech business registry)",
-  "websiteUrl": "https://icovazby.cz",
+  "websiteUrl": "https://icovazby.cz/?utm_source=ares-mcp",
   "repository": {
     "url": "https://github.com/milos106/ares-mcp",
     "source": "github"
