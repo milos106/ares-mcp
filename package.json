@@ -1,7 +1,11 @@
 {
-  "name": "ares-mcp",
+  "name": "@milos106/ares-mcp",
   "version": "0.1.0",
+  "mcpName": "io.github.milos106/ares-mcp",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "MCP server for ARES, the Czech business registry — company lookup, due diligence, statutory bodies, insolvency, with optional Ed25519-signed provenance.",
   "keywords": [
     "mcp",
