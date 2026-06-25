@@ -9,8 +9,10 @@ import { fullDueDiligenceTool } from "./fullDueDiligence.js";
 import { getResClassificationTool } from "./getResClassification.js";
 import { getStatutoryBodiesTool } from "./getStatutoryBodies.js";
 import { getTradeLicensesTool } from "./getTradeLicenses.js";
+import { groupFundingTool } from "./groupFunding.js";
 import { lookupCompanyTool } from "./lookupCompany.js";
 import { lookupCzNaceTool } from "./lookupCzNace.js";
+import { ownershipVerdictTool } from "./ownershipVerdict.js";
 import { publicFundingTool } from "./publicFunding.js";
 import { searchByAddressTool } from "./searchByAddress.js";
 import { searchCompaniesTool } from "./searchCompanies.js";
@@ -44,6 +46,8 @@ export const MOAT_TOOLS: RegisteredTool[] = [
   discoverHoldingTool,
   publicFundingTool,
   beneficialOwnerTool,
+  ownershipVerdictTool,
+  groupFundingTool,
 ];
 
 /** The toolset for a given runtime context — moat tools gated on `aresWeb`. */
