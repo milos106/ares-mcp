@@ -65,6 +65,16 @@ export class AresWebClient {
     return this.get(`/api/ubo/${encodeURIComponent(ico)}`);
   }
 
+  /** Reconciled "who really owns it" verdict (shareholders × UBO × holding). */
+  getOwnershipVerdict(ico: string): Promise<unknown> {
+    return this.get(`/api/ownership-verdict/${encodeURIComponent(ico)}`);
+  }
+
+  /** Hlídač státu funding (dotace + zakázky) aggregated across the ownership group. */
+  getGroupFunding(ico: string): Promise<unknown> {
+    return this.get(`/api/group-funding/${encodeURIComponent(ico)}`);
+  }
+
   private get<T = unknown>(path: string): Promise<T> {
     return this.execute<T>(this.buildUrl(path), { method: "GET" });
   }
