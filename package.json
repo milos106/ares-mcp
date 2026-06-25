@@ -1,6 +1,6 @@
 {
   "name": "@milos106/ares-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "mcpName": "io.github.milos106/ares-mcp",
   "private": false,
   "publishConfig": {

@@ -20,7 +20,7 @@ ARES (Administrativní registr ekonomických subjektů) is the official public r
 
 ## Setup
 
-Three ways to run `ares-mcp` — pick one:
+Two ways to run `ares-mcp` — pick one:
 
 ### Option A — npx (no install, recommended)
 
@@ -32,21 +32,7 @@ Three ways to run `ares-mcp` — pick one:
 }
 ```
 
-### Option B — Docker (GHCR image)
-
-```sh
-docker run -i --rm ghcr.io/milos106/ares-mcp:0.1.0
-```
-
-```json
-{
-  "mcpServers": {
-    "ares": { "command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/milos106/ares-mcp:0.1.0"] }
-  }
-}
-```
-
-### Option C — from source
+### Option B — from source
 
 ```sh
 git clone git@github.com:milos106/ares-mcp.git
@@ -56,7 +42,7 @@ npm run build
 npm test
 ```
 
-Then point your MCP client at the absolute path of `dist/index.js`. The per-client examples below use this from-source form — swap `"command": "node", "args": ["…/dist/index.js"]` for the npx or Docker form above if you prefer a zero-install setup.
+Then point your MCP client at the absolute path of `dist/index.js`. The per-client examples below use this from-source form — swap `"command": "node", "args": ["…/dist/index.js"]` for the npx form above if you prefer a zero-install setup.
 
 ### Claude Desktop
 
